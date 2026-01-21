@@ -1,22 +1,3 @@
-## よく使うコマンド
-```bash
-bash scripts/build.sh
-bash scripts/build.sh debug
-bash scripts/stress_test.sh -n 100 -o aout.txt
-bash scripts/clean.sh
-
-# interactive
-bash scripts/build.sh interactive
-bash scripts/interactive.sh
-bash scripts/interactive.sh -n 5
-
-# Codeforces
-bash scripts/copy.sh -l
-bash scripts/deploy.sh
-```
-
----
-
 ## よく使うコマンド早見表
 
 | やりたいこと | コマンド |
@@ -25,7 +6,8 @@ bash scripts/deploy.sh
 | コンパイルのみ | `bash scripts/build.sh build` |
 | ランダムテスト | `bash scripts/build.sh debug` |
 | ストレステスト100回 | `bash scripts/stress_test.sh -n 100 -o aout.txt` |
-| インタラクティブ | `bash scripts/build.sh interactive` → `bash scripts/interactive.sh` |
+| インタラクティブ（1回） | `bash scripts/interactive.sh` |
+| インタラクティブ（5回） | `bash scripts/interactive.sh -n 5` |
 | 出力確認 | `cat aout.txt` |
 | エラー確認 | `cat aerr.log` |
 | クリーンアップ | `bash scripts/clean.sh` |
@@ -140,13 +122,18 @@ cat aout.txt
 
 ### 5. インタラクティブ問題
 
-#### インタラクティブ実行
+#### インタラクティブ実行（1回）
 ```bash
-bash scripts/build.sh interactive
 bash scripts/interactive.sh
 ```
 
-main.cppとjudge.cppが対話形式で実行されます。
+#### インタラクティブ実行（複数回）
+```bash
+bash scripts/interactive.sh -n 5
+```
+
+main.cppとinteractive_judge.cppが対話形式で実行されます。
+ビルドも自動で行われるため、別途ビルドコマンドを実行する必要はありません。
 
 ---
 
