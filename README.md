@@ -12,6 +12,7 @@
 | エラー確認 | `cat aerr.log` |
 | クリーンアップ | `bash scripts/clean.sh` |
 | AtCoder Library展開してコピー | `bash scripts/copy.sh` |
+| AtCoder Library展開してコピー（軽量版） | `bash scripts/copy.sh -l` |
 | AtCoder Library展開してファイル出力 | `bash scripts/deploy.sh` |
 
 ---
