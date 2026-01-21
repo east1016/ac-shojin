@@ -6,10 +6,8 @@
 | コンパイルのみ | `bash scripts/build.sh build` |
 | ランダムテスト | `bash scripts/build.sh debug` |
 | ストレステスト100回 | `bash scripts/stress_test.sh -n 100 -o aout.txt` |
-| インタラクティブ（1回） | `bash scripts/interactive.sh` |
+| インタラクティブ | `bash scripts/interactive.sh` |
 | インタラクティブ（5回） | `bash scripts/interactive.sh -n 5` |
-| 出力確認 | `cat aout.txt` |
-| エラー確認 | `cat aerr.log` |
 | クリーンアップ | `bash scripts/clean.sh` |
 | AtCoder Library展開してコピー | `bash scripts/copy.sh` |
 | AtCoder Library展開してコピー（軽量版） | `bash scripts/copy.sh -l` |
