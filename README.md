@@ -10,7 +10,6 @@ bash scripts/build.sh interactive
 bash scripts/interactive.sh
 bash scripts/interactive.sh -n 5
 
-
 # Codeforces
 bash scripts/copy.sh -l
 bash scripts/deploy.sh
@@ -18,47 +17,20 @@ bash scripts/deploy.sh
 
 ---
 
+## よく使うコマンド早見表
 
-## ディレクトリ構成
-
-```
-.
-├── main.cpp              # メイン作業ファイル（解答プログラム）
-├── ain.txt               # 標準入力ファイル
-├── aout.txt              # 標準出力ファイル
-├── aerr.log              # 標準エラー出力ファイル（ANSIカラーコード付き）
-│
-│
-├── templates/            # テンプレートソースコード
-│   ├── testcase_generate.cpp   # ランダムテストケース生成プログラム
-│   ├── main_greedy.cpp         # ストレステスト用愚直解
-│   └── interactive_judge.cpp   # インタラクティブ問題用ジャッジプログラム
-│
-├── scripts/              # 実行スクリプト（実体）
-│   ├── build.sh          # メインビルド・実行スクリプト
-│   ├── stress_test.sh    # ストレステストスクリプト
-│   ├── interactive.sh    # インタラクティブ問題用スクリプト
-│   ├── clean.sh          # 一時ファイルクリーンアップスクリプト
-│   ├── copy.sh           # クリップボードコピースクリプト
-│   ├── deploy.sh         # ファイル展開スクリプト
-│   ├── run.sh            # 汎用コンパイル・実行スクリプト
-│   ├── gen_run.sh        # テスト生成＋実行スクリプト
-│   └── compile_flags.sh  # コンパイルフラグ管理スクリプト
-│
-├── lib/                  # ライブラリ
-│   ├── ac-library/       # AtCoder Library
-│   └── bits/             # C++ bits ヘッダー
-│
-├── build/                # ビルド成果物（実行ファイル）
-│   ├── a.out             # メイン実行ファイル
-│   ├── gen               # ジェネレーター実行ファイル
-│   └── judge.out         # ジャッジ実行ファイル
-│
-├── tmp/                  # 一時ファイル
-│   └── (テストケース等)
-│
-└── past/                 # 過去の作業ファイル
-```
+| やりたいこと | コマンド |
+|------------|---------|
+| 普通に実行 | `bash scripts/build.sh` |
+| コンパイルのみ | `bash scripts/build.sh build` |
+| ランダムテスト | `bash scripts/build.sh debug` |
+| ストレステスト100回 | `bash scripts/stress_test.sh -n 100 -o aout.txt` |
+| インタラクティブ | `bash scripts/build.sh interactive` → `bash scripts/interactive.sh` |
+| 出力確認 | `cat aout.txt` |
+| エラー確認 | `cat aerr.log` |
+| クリーンアップ | `bash scripts/clean.sh` |
+| AtCoder Library展開してコピー | `bash scripts/copy.sh` |
+| AtCoder Library展開してファイル出力 | `bash scripts/deploy.sh` |
 
 ---
 
@@ -244,23 +216,6 @@ cat aout.txt
 
 ---
 
-## よく使うコマンド早見表
-
-| やりたいこと | コマンド |
-|------------|---------|
-| 普通に実行 | `bash scripts/build.sh` |
-| コンパイルのみ | `bash scripts/build.sh build` |
-| ランダムテスト | `bash scripts/build.sh debug` |
-| ストレステスト100回 | `bash scripts/stress_test.sh -n 100 -o aout.txt` |
-| インタラクティブ | `bash scripts/build.sh interactive` → `bash scripts/interactive.sh` |
-| 出力確認 | `cat aout.txt` |
-| エラー確認 | `cat aerr.log` |
-| クリーンアップ | `bash scripts/clean.sh` |
-| AtCoder Library展開してコピー | `bash scripts/copy.sh` |
-| AtCoder Library展開してファイル出力 | `bash scripts/deploy.sh` |
-
----
-
 ## オンラインジャッジへの提出
 
 ### AtCoderへの提出
@@ -341,7 +296,7 @@ std::print("Hello, {}!\n", "AtCoder");
 - テストの一時ファイルは`tmp/`ディレクトリに保存されます
 - ビルド成果物は`build/`ディレクトリに保存されます
 - コンパイルエラーは**aerr.log**に色付きで出力されます（warningはターミナルのみに表示）
-- 実行時エラーも**aerr.log**に色付きで出力されます
+- 実行時エラーも**aerr.log**に出力されます
 - コンパイルフラグは`scripts/compile_flags.sh`で管理されています
 
 ---
@@ -350,7 +305,7 @@ std::print("Hello, {}!\n", "AtCoder");
 
 ### コンパイルエラーが出る
 ```bash
-cat aerr.log  # エラー内容を確認（ANSIカラーコード付き）
+cat aerr.log  # エラー内容を確認
 ```
 
 ### C++23が使えない
