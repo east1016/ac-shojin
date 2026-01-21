@@ -35,7 +35,8 @@ __pycache__/
 .LSOverride
 
 # IDE
-.vscode/
+.vscode/*
+!.vscode/snippets/
 .idea/
 *.swp
 *.swo
