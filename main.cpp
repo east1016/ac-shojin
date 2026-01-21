@@ -10,7 +10,7 @@ using namespace std;
 
 typedef long long ll;
 
-void solve() {}
+void solve() { cout << "Hello, World!" << endl; }
 
 int main() {
     ios::sync_with_stdio(false);
