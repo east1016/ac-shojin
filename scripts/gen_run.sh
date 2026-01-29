@@ -48,6 +48,7 @@ INPUT_FILE=""
 OUT_FILE=""
 ERR_FILE=""
 TMP_PREFIX="genrun_tmp"
+MEASURE_TIME=0
 PROGRAM_ARGS=()   # 空配列で初期化
 
 usage() {
@@ -64,6 +65,7 @@ Optional:
   -o, --out     Capture solution's stdout in this file (overwritten).
   -e, --err     Capture stderr (generator + solution) in this file (overwritten).
   -t, --tmp     Prefix for temporary files (default: genrun_tmp).
+      --time    Measure and display execution time.
   -h, --help    Show this help.
 EOF
 }
@@ -85,6 +87,8 @@ while [[ $# -gt 0 ]]; do
       ERR_FILE="$2"; shift 2;;
     -t|--tmp)
       TMP_PREFIX="$2"; shift 2;;
+    --time)
+      MEASURE_TIME=1; shift;;
     -h|--help)
       usage; exit 0;;
     --)
@@ -116,10 +120,21 @@ COMPILE_FLAGS=$(get_all_flags)
 
 echo "[gen_run.sh] Compiling generator: $(to_relative_path "$GEN_SRC") -> $(to_relative_path "$GEN_BIN")" >&2
 
+local start_time end_time elapsed
+if [[ $MEASURE_TIME -eq 1 ]]; then
+  start_time=$(date +%s.%N)
+fi
+
 if [[ -n "$ERR_FILE" ]]; then
   g++ $COMPILE_FLAGS -o "$GEN_BIN" "$GEN_SRC" 2>> "$ERR_FILE"
 else
   g++ $COMPILE_FLAGS -o "$GEN_BIN" "$GEN_SRC"
+fi
+
+if [[ $MEASURE_TIME -eq 1 ]]; then
+  end_time=$(date +%s.%N)
+  elapsed=$(echo "scale=0; ($end_time - $start_time) * 1000 / 1 + 0.999" | bc | cut -d'.' -f1)
+  echo "[gen_run.sh] Generator compilation time: ${elapsed}ms" >&2
 fi
 
 # -------- テスト実行ループ --------
@@ -143,6 +158,7 @@ for ((i=1; i<=TESTS; ++i)); do
   echo "[gen_run.sh] Running solution on test #$i" >&2
 
   RUNSH_ARGS=( -s "$SOL_SRC" -i "$IN_FILE" )
+  [[ $MEASURE_TIME -eq 1 ]] && RUNSH_ARGS+=( --time )
   [[ -n "$OUT_FILE" ]] && RUNSH_ARGS+=( -o "$OUT_FILE" )
   [[ -n "$ERR_FILE" ]] && RUNSH_ARGS+=( -e "$ERR_FILE" )
   if (( ${#PROGRAM_ARGS[@]} > 0 )); then

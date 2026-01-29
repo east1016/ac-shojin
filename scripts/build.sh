@@ -29,6 +29,7 @@ OUTPUT_FILE="${PROJ_ROOT}/build/a.out"
 INPUT_FILE="${PROJ_ROOT}/ain.txt"
 OUTPUT_LOG="${PROJ_ROOT}/aout.txt"
 ERROR_LOG="${PROJ_ROOT}/aerr.log"
+MEASURE_TIME=0
 
 # Function to display usage
 usage() {
@@ -43,6 +44,7 @@ usage() {
     echo "  interactive   Compile and run (interactive, no buffering)"
     echo "  tty           Compile and run with pseudo-TTY (strong interactive)"
     echo "  -s <file>     Specify source file (default: main.cpp)"
+    echo "  -t, --time    Measure and display execution time"
     echo "  -h            Display this help message"
     exit 1
 }
@@ -57,13 +59,26 @@ compile() {
     # コンパイル時のwarningは標準エラー出力に表示（aerrには出力しない）
     # パスをフィルタリングして表示
     local tmp_err=$(mktemp)
+
+    local start_time end_time elapsed
+    if [ $MEASURE_TIME -eq 1 ]; then
+        start_time=$(date +%s.%N)
+    fi
+
     if g++ ${flags} -o ${OUTPUT_FILE} ${src_file} 2> "$tmp_err"; then
         # 成功時でも警告があれば表示
         if [ -s "$tmp_err" ]; then
             filter_paths < "$tmp_err" >&2
         fi
         rm -f "$tmp_err"
-        echo "Compilation successful!" >&2
+
+        if [ $MEASURE_TIME -eq 1 ]; then
+            end_time=$(date +%s.%N)
+            elapsed=$(echo "scale=0; ($end_time - $start_time) * 1000 / 1 + 0.999" | bc | cut -d'.' -f1)
+            echo "Compilation successful! (${elapsed}ms)" >&2
+        else
+            echo "Compilation successful!" >&2
+        fi
         return 0
     else
         # 失敗時
@@ -74,53 +89,102 @@ compile() {
     fi
 }
 
+# Parse options
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -t|--time)
+            MEASURE_TIME=1
+            shift
+            ;;
+        -s)
+            if [ -n "$2" ]; then
+                SOURCE_FILE="$2"
+                shift 2
+            else
+                echo "Error: -s requires a source file argument"
+                usage
+            fi
+            ;;
+        -h|--help)
+            usage
+            ;;
+        *)
+            # 最初の引数がコマンドの場合はループを抜ける
+            break
+            ;;
+    esac
+done
+
 # Default behavior
 if [ $# -eq 0 ]; then
-    "$SCRIPT_DIR/run.sh" -s ${SOURCE_FILE} -i ${INPUT_FILE} -o ${OUTPUT_LOG} -e ${ERROR_LOG}
+    if [ $MEASURE_TIME -eq 1 ]; then
+        "$SCRIPT_DIR/run.sh" --time -s ${SOURCE_FILE} -i ${INPUT_FILE} -o ${OUTPUT_LOG} -e ${ERROR_LOG}
+    else
+        "$SCRIPT_DIR/run.sh" -s ${SOURCE_FILE} -i ${INPUT_FILE} -o ${OUTPUT_LOG} -e ${ERROR_LOG}
+    fi
     exit 0
 fi
 
 case "$1" in
     work)
-        "$SCRIPT_DIR/run.sh" -s ${SOURCE_FILE} -i ${INPUT_FILE} -o ${OUTPUT_LOG} -e ${ERROR_LOG}
+        if [ $MEASURE_TIME -eq 1 ]; then
+            "$SCRIPT_DIR/run.sh" --time -s ${SOURCE_FILE} -i ${INPUT_FILE} -o ${OUTPUT_LOG} -e ${ERROR_LOG}
+        else
+            "$SCRIPT_DIR/run.sh" -s ${SOURCE_FILE} -i ${INPUT_FILE} -o ${OUTPUT_LOG} -e ${ERROR_LOG}
+        fi
         ;;
     debug)
-        "$SCRIPT_DIR/gen_run.sh" -g "${PROJ_ROOT}/templates/testcase_generate.cpp" -s ${SOURCE_FILE} -i ${INPUT_FILE} -o ${OUTPUT_LOG} -e ${ERROR_LOG}
+        if [ $MEASURE_TIME -eq 1 ]; then
+            "$SCRIPT_DIR/gen_run.sh" --time -g "${PROJ_ROOT}/templates/testcase_generate.cpp" -s ${SOURCE_FILE} -i ${INPUT_FILE} -o ${OUTPUT_LOG} -e ${ERROR_LOG}
+        else
+            "$SCRIPT_DIR/gen_run.sh" -g "${PROJ_ROOT}/templates/testcase_generate.cpp" -s ${SOURCE_FILE} -i ${INPUT_FILE} -o ${OUTPUT_LOG} -e ${ERROR_LOG}
+        fi
         ;;
     build)
         compile ${SOURCE_FILE} || exit 1
         ;;
     run)
         compile ${SOURCE_FILE} || exit 1
-        "${OUTPUT_FILE}"
+        if [ $MEASURE_TIME -eq 1 ]; then
+            echo "Running..." >&2
+            /usr/bin/time -p "${OUTPUT_FILE}" 2>&1 | grep -E '^(real|user|sys)' | sed 's/^/  /' >&2 || "${OUTPUT_FILE}"
+        else
+            "${OUTPUT_FILE}"
+        fi
         ;;
     test)
         compile ${SOURCE_FILE} || exit 1
-        "${OUTPUT_FILE}" < ${INPUT_FILE} > ${OUTPUT_LOG} 2> ${ERROR_LOG}
-        echo "Output written to $(to_relative_path ${OUTPUT_LOG})"
-        echo "Errors written to $(to_relative_path ${ERROR_LOG})"
+        if [ $MEASURE_TIME -eq 1 ]; then
+            echo "Running..." >&2
+            local tmp_time=$(mktemp)
+            /usr/bin/time -p "${OUTPUT_FILE}" < ${INPUT_FILE} > ${OUTPUT_LOG} 2> >(tee "$tmp_time" >&2)
+            cat "$tmp_time" | grep -v "^${OUTPUT_FILE}" >> ${ERROR_LOG} 2>/dev/null || true
+            rm -f "$tmp_time"
+            echo "Output written to $(to_relative_path ${OUTPUT_LOG})"
+            echo "Errors written to $(to_relative_path ${ERROR_LOG})"
+        else
+            "${OUTPUT_FILE}" < ${INPUT_FILE} > ${OUTPUT_LOG} 2> ${ERROR_LOG}
+            echo "Output written to $(to_relative_path ${OUTPUT_LOG})"
+            echo "Errors written to $(to_relative_path ${ERROR_LOG})"
+        fi
         ;;
     interactive)
         compile ${SOURCE_FILE} || exit 1
         echo "Running in interactive mode (no buffering)..."
-        stdbuf -i0 -o0 -e0 "${OUTPUT_FILE}"
+        if [ $MEASURE_TIME -eq 1 ]; then
+            /usr/bin/time -p stdbuf -i0 -o0 -e0 "${OUTPUT_FILE}"
+        else
+            stdbuf -i0 -o0 -e0 "${OUTPUT_FILE}"
+        fi
         ;;
     tty)
         compile ${SOURCE_FILE} || exit 1
         echo "Running in pseudo-TTY mode..."
-        script -q /dev/null "${OUTPUT_FILE}"
-        ;;
-    -s)
-        if [ -n "$2" ]; then
-            SOURCE_FILE=$2
-            compile ${SOURCE_FILE} || exit 1
+        if [ $MEASURE_TIME -eq 1 ]; then
+            /usr/bin/time -p script -q /dev/null "${OUTPUT_FILE}"
         else
-            echo "Error: -s requires a source file argument"
-            usage
+            script -q /dev/null "${OUTPUT_FILE}"
         fi
-        ;;
-    -h|--help)
-        usage
         ;;
     *)
         echo "Unknown option: $1"

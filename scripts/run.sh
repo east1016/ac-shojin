@@ -52,6 +52,7 @@ IN_FILE=""
 OUT_FILE=""
 ERR_FILE=""
 TARGET="${PROJ_ROOT}/build/a.out"
+MEASURE_TIME=0
 
 usage() {
   cat <<EOF
@@ -65,6 +66,7 @@ Optional:
   -o, --out      Redirect standard output to this file.
   -e, --err      Redirect standard error (compile & run) to this file.
   -t, --target   Output binary name (default: build/a.out).
+      --time     Measure and display execution time.
   -h, --help     Show this help.
 
 Anything after '--' is passed to the compiled program.
@@ -84,6 +86,8 @@ while [[ $# -gt 0 ]]; do
       ERR_FILE="$2"; shift 2 ;;
     -t|--target)
       TARGET="$2"; shift 2 ;;
+    --time)
+      MEASURE_TIME=1; shift ;;
     -h|--help)
       usage; exit 0 ;;
     --)
@@ -126,6 +130,11 @@ compile() {
   echo "[run.sh] Compiling $rel_src -> $rel_target" >&2
   local compile_cmd=(g++ $COMPILE_FLAGS -o "$TARGET" "$SRC")
 
+  local start_time end_time elapsed
+  if [[ $MEASURE_TIME -eq 1 ]]; then
+    start_time=$(date +%s.%N)
+  fi
+
   if [[ -n "$ERR_FILE" ]]; then
     # 一時ファイルにコンパイル結果を保存
     local tmp_compile_err=$(mktemp)
@@ -153,6 +162,12 @@ compile() {
       exit 1
     fi
   fi
+
+  if [[ $MEASURE_TIME -eq 1 ]]; then
+    end_time=$(date +%s.%N)
+    elapsed=$(echo "scale=0; ($end_time - $start_time) * 1000 / 1 + 0.999" | bc | cut -d'.' -f1)
+    echo "[run.sh] Compilation time: ${elapsed}ms" >&2
+  fi
 }
 compile
 
@@ -167,6 +182,11 @@ echo "[run.sh] Running $(to_relative_path "$TARGET")" >&2
 # --- I/O リダイレクション ---
 run_program() {
   local exit_code=0
+  local start_time end_time elapsed
+
+  if [[ $MEASURE_TIME -eq 1 ]]; then
+    start_time=$(date +%s.%N)
+  fi
 
   if [[ -n "$IN_FILE" ]]; then
     if [[ -n "$OUT_FILE" ]]; then
@@ -196,6 +216,12 @@ run_program() {
         "${cmd[@]}" || exit_code=$?
       fi
     fi
+  fi
+
+  if [[ $MEASURE_TIME -eq 1 ]]; then
+    end_time=$(date +%s.%N)
+    elapsed=$(echo "scale=0; ($end_time - $start_time) * 1000 / 1 + 0.999" | bc | cut -d'.' -f1)
+    echo "[run.sh] Execution time: ${elapsed}ms" >&2
   fi
 
   # 実行時エラーをERR_FILEに記録
